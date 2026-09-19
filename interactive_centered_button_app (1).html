@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arcade Hub - Play Mini Games</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #030712;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .font-arcade {
+            font-family: 'Press Start 2P', monospace;
+        }
+
+        /* Glassmorphism card styles */
+        .glass-card {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Ambient Glow */
+        .glow-bg {
+            background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, rgba(3, 7, 18, 0) 70%);
+        }
+
+        /* Animated grid background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+
+        /* View transitions */
+        .view-section {
+            transition: opacity 0.35s ease-in-out, transform 0.35s ease-in-out;
+        }
+        .view-hidden {
+            opacity: 0;
+            transform: scale(0.97);
+            pointer-events: none;
+            position: absolute;
+            inset: 0;
+            visibility: hidden;
+        }
+        .view-visible {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+            position: relative;
+            visibility: visible;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body class="h-full bg-grid glow-bg flex flex-col justify-between overflow-x-hidden text-slate-100">
+
+    <!-- Header Navigation -->
+    <header class="w-full border-b border-slate-800/60 bg-slate-950/70 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="showHomeView()">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center font-arcade text-xs text-white shadow-lg shadow-indigo-500/30">
+                    🎮
+                </div>
+                <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
+                    RetroArcade
+                </span>
+            </div>
+            
+            <button id="sound-toggle" onclick="toggleMute()" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-indigo-500/50 text-slate-300 hover:text-white transition flex items-center space-x-2 text-xs font-semibold">
+                <span id="sound-icon">🔊</span>
+                <span id="sound-label" class="hidden sm:inline">Sound: ON</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Views Container -->
+    <main class="flex-grow flex items-center justify-center p-4 relative min-h-[80vh]">
+
+        <!-- VIEW 1: START SCREEN (Centered Button) -->
+        <section id="view-start" class="view-section view-visible w-full max-w-md flex flex-col items-center justify-center text-center">
+            <div class="relative group">
+                <!-- Glowing Aura -->
+                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur-xl opacity-60 group-hover:opacity-100 transition duration-500 animate-pulse"></div>
+                
+                <!-- Main "Get Started!" Button -->
+                <button id="btn-start" onclick="openHomePage()" class="relative px-12 py-6 bg-slate-900 border border-slate-700/80 hover:border-indigo-400 rounded-2xl text-xl sm:text-2xl font-extrabold tracking-wide text-white shadow-2xl transition duration-200 transform hover:scale-105 active:scale-95 flex items-center space-x-4 group">
+                    <span class="bg-gradient-to-r from-indigo-200 via-white to-pink-200 bg-clip-text text-transparent">Get Started!</span>
+                    <svg class="w-6 h-6 text-indigo-400 group-hover:translate-x-1.5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                </button>
+            </div>
+            <p class="mt-6 text-xs sm:text-sm text-slate-400 font-medium">
+                Click to explore 3 playable retro arcade classics
+            </p>
+        </section>
+
+        <!-- VIEW 2: HOME PAGE (3 Games Grid) -->
+        <section id="view-home" class="view-section view-hidden w-full max-w-6xl py-8">
+            <div class="text-center mb-10">
+                <span class="px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+                    Arcade Hub
+                </span>
+                <h1 class="text-3xl sm:text-5xl font-extrabold mt-3 text-white tracking-tight">
+                    Choose Your Challenge
+                </h1>
+                <p class="text-slate-400 mt-2 text-sm sm:text-base max-w-md mx-auto">
+                    Select any game below to start playing instantly in your browser.
+                </p>
+            </div>
+
+            <!-- Game Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+                
+                <!-- Card 1: Pong -->
+                <div class="glass-card rounded-3xl p-6 flex flex-col justify-between hover:border-indigo-500/50 transition-all duration-300 hover:-translate-y-1.5 group">
+                    <div>
+                        <div class="h-44 w-full rounded-2xl bg-slate-900 border border-slate-800/80 flex items-center justify-center relative overflow-hidden mb-5">
+                            <div class="absolute inset-0 bg-gradient-to-b from-indigo-500/10 to-transparent"></div>
+                            <!-- Pong Animated Mockup -->
+                            <div class="w-full h-full p-6 flex justify-between items-center relative">
+                                <div class="w-2.5 h-12 bg-indigo-400 rounded-full shadow-lg shadow-indigo-500/50"></div>
+                                <div class="w-3.5 h-3.5 bg-white rounded-full shadow-md animate-ping"></div>
+                                <div class="w-2.5 h-12 bg-pink-400 rounded-full shadow-lg shadow-pink-500/50"></div>
+                                <div class="absolute inset-x-0 top-1/2 border-b border-dashed border-slate-800"></div>
+                            </div>
+                        </div>
+                        <h2 class="text-xl font-bold text-white mb-2 group-hover:text-indigo-400 transition">Pong Classic</h2>
+                        <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                            Test your reflexes against an adaptive AI paddle. Keep the ball bouncing and score 5 points to win!
+                        </p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-4 text-xs font-semibold text-slate-400">
+                            <span>High Score: <span id="hs-pong" class="text-indigo-300">0</span></span>
+                            <span>Single Player</span>
+                        </div>
+                        <button onclick="launchGame('pong')" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center justify-center space-x-2">
+                            <span>Play Pong</span>
+                            <span>⚡</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 2: Snake -->
+                <div class="glass-card rounded-3xl p-6 flex flex-col justify-between hover:border-emerald-500/50 transition-all duration-300 hover:-translate-y-1.5 group">
+                    <div>
+                        <div class="h-44 w-full rounded-2xl bg-slate-900 border border-slate-800/80 flex items-center justify-center relative overflow-hidden mb-5">
+                            <div class="absolute inset-0 bg-gradient-to-b from-emerald-500/10 to-transparent"></div>
+                            <!-- Snake Animated Mockup -->
+                            <div class="grid grid-cols-6 gap-2 opacity-80">
+                                <div class="w-4 h-4 bg-emerald-500 rounded-sm"></div>
+                                <div class="w-4 h-4 bg-emerald-500 rounded-sm"></div>
+                                <div class="w-4 h-4 bg-emerald-400 rounded-sm shadow-md"></div>
+                                <div class="w-4 h-4"></div>
+                                <div class="w-4 h-4 bg-red-500 rounded-full animate-bounce"></div>
+                                <div class="w-4 h-4"></div>
+                            </div>
+                        </div>
+                        <h2 class="text-xl font-bold text-white mb-2 group-hover:text-emerald-400 transition">Retro Snake</h2>
+                        <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                            Guide the glowing snake to eat food blocks, grow longer, and avoid running into walls or your own tail.
+                        </p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-4 text-xs font-semibold text-slate-400">
+                            <span>High Score: <span id="hs-snake" class="text-emerald-300">0</span></span>
+                            <span>Arcade Mode</span>
+                        </div>
+                        <button onclick="launchGame('snake')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition flex items-center justify-center space-x-2">
+                            <span>Play Snake</span>
+                            <span>🐍</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Card 3: Pac-man -->
+                <div class="glass-card rounded-3xl p-6 flex flex-col justify-between hover:border-amber-500/50 transition-all duration-300 hover:-translate-y-1.5 group">
+                    <div>
+                        <div class="h-44 w-full rounded-2xl bg-slate-900 border border-slate-800/80 flex items-center justify-center relative overflow-hidden mb-5">
+                            <div class="absolute inset-0 bg-gradient-to-b from-amber-500/10 to-transparent"></div>
+                            <!-- Pacman Animated Mockup -->
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 bg-yellow-400 rounded-full border-r-4 border-slate-900"></div>
+                                <div class="w-2 h-2 bg-amber-200 rounded-full"></div>
+                                <div class="w-2 h-2 bg-amber-200 rounded-full"></div>
+                                <div class="w-5 h-5 bg-red-500 rounded-t-full relative">
+                                    <div class="w-1.5 h-1.5 bg-white rounded-full absolute top-1 left-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <h2 class="text-xl font-bold text-white mb-2 group-hover:text-amber-400 transition">Pac-man Rush</h2>
+                        <p class="text-slate-400 text-xs leading-relaxed mb-4">
+                            Navigate the maze, eat all dots, grab power pellets to turn ghosts vulnerable, and score maximum points!
+                        </p>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-4 text-xs font-semibold text-slate-400">
+                            <span>High Score: <span id="hs-pacman" class="text-amber-300">0</span></span>
+                            <span>Maze Runner</span>
+                        </div>
+                        <button onclick="launchGame('pacman')" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl shadow-lg shadow-amber-600/30 transition flex items-center justify-center space-x-2">
+                            <span>Play Pac-man</span>
+                            <span>👻</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VIEW 3: GAME ARENA SCREEN -->
+        <section id="view-game" class="view-section view-hidden w-full max-w-3xl flex flex-col items-center">
+            
+            <!-- Top Game Bar -->
+            <div class="w-full flex items-center justify-between mb-4 bg-slate-900/80 backdrop-blur border border-slate-800 p-4 rounded-2xl">
+                <button onclick="showHomeView()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-xl text-xs font-semibold text-slate-200 hover:text-white transition flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    <span>Back to Home</span>
+                </button>
+
+                <div class="text-center">
+                    <span id="game-title" class="font-bold text-base sm:text-lg text-white">Game Title</span>
+                    <div class="text-xs text-slate-400">Score: <span id="current-score" class="font-mono text-indigo-400 font-bold text-sm">0</span></div>
+                </div>
+
+                <button onclick="restartActiveGame()" class="px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 hover:bg-indigo-600/40 text-indigo-300 rounded-xl text-xs font-semibold transition flex items-center space-x-1.5">
+                    <span>↻ Restart</span>
+                </button>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="relative w-full aspect-square max-w-[500px] bg-slate-950 rounded-2xl border-2 border-slate-800 shadow-2xl flex items-center justify-center overflow-hidden">
+                <canvas id="game-canvas" width="500" height="500" class="w-full h-full block rounded-xl"></canvas>
+                
+                <!-- Overlay Modal (Game Over / Start) -->
+                <div id="game-overlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center transition-opacity duration-300">
+                    <h3 id="overlay-title" class="text-2xl sm:text-3xl font-extrabold text-white mb-2">Game Over</h3>
+                    <p id="overlay-msg" class="text-sm text-slate-400 mb-6">Press start to play!</p>
+                    <button id="overlay-btn" onclick="startCurrentGame()" class="px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg transition transform hover:scale-105 active:scale-95">
+                        Start Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- On-Screen Mobile Touch Controls -->
+            <div id="touch-controls" class="mt-4 w-full max-w-[500px] grid grid-cols-3 gap-2">
+                <div></div>
+                <button onpointerdown="triggerKey('ArrowUp')" class="py-3 bg-slate-900 border border-slate-800 active:bg-indigo-600/50 rounded-xl font-bold text-slate-200">▲</button>
+                <div></div>
+                <button onpointerdown="triggerKey('ArrowLeft')" class="py-3 bg-slate-900 border border-slate-800 active:bg-indigo-600/50 rounded-xl font-bold text-slate-200">◀</button>
+                <button onpointerdown="triggerKey('ArrowDown')" class="py-3 bg-slate-900 border border-slate-800 active:bg-indigo-600/50 rounded-xl font-bold text-slate-200">▼</button>
+                <button onpointerdown="triggerKey('ArrowRight')" class="py-3 bg-slate-900 border border-slate-800 active:bg-indigo-600/50 rounded-xl font-bold text-slate-200">▶</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full border-t border-slate-800/40 py-4 text-center text-xs text-slate-500">
+        RetroArcade Platform • Built with HTML5 Canvas & Web Audio
+    </footer>
+
+    <script>
+        /* --- GLOBAL APP & AUDIO STATE --- */
+        let audioCtx = null;
+        let isMuted = false;
+
+        // High scores loaded from local storage
+        const highScores = {
+            pong: parseInt(localStorage.getItem('hs_pong') || '0'),
+            snake: parseInt(localStorage.getItem('hs_snake') || '0'),
+            pacman: parseInt(localStorage.getItem('hs_pacman') || '0')
+        };
+
+        function updateHighScoreDisplays() {
+            document.getElementById('hs-pong').textContent = highScores.pong;
+            document.getElementById('hs-snake').textContent = highScores.snake;
+            document.getElementById('hs-pacman').textContent = highScores.pacman;
+        }
+
+        /* Web Audio Sound Synthesizer */
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (isMuted) return;
+            initAudio();
+            if (!audioCtx) return;
+
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'beep') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.1);
+            } else if (type === 'score') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.setValueAtTime(880, now + 0.08);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.linearRampToValueAtTime(110, now + 0.4);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('sound-icon').textContent = isMuted ? '🔇' : '🔊';
+            document.getElementById('sound-label').textContent = isMuted ? 'Sound: OFF' : 'Sound: ON';
+        }
+
+        /* Navigation Router */
+        function openHomePage() {
+            playSound('beep');
+            switchView('view-home');
+            updateHighScoreDisplays();
+        }
+
+        function showHomeView() {
+            stopCurrentGame();
+            playSound('beep');
+            switchView('view-home');
+        }
+
+        function switchView(targetId) {
+            const views = ['view-start', 'view-home', 'view-game'];
+            views.forEach(id => {
+                const el = document.getElementById(id);
+                if (id === targetId) {
+                    el.classList.remove('view-hidden');
+                    el.classList.add('view-visible');
+                } else {
+                    el.classList.remove('view-visible');
+                    el.classList.add('view-hidden');
+                }
+            });
+        }
+
+        // Virtual Touch Button Handler
+        function triggerKey(code) {
+            window.dispatchEvent(new KeyboardEvent('keydown', { key: code }));
+        }
+
+        /* --- GAME ENGINE COMMON ENGINE SETUP --- */
+        const canvas = document.getElementById('game-canvas');
+        const ctx = canvas.getContext('2d');
+        let activeGame = null;
+        let animationFrameId = null;
+        let gameScore = 0;
+
+        function setOverlay(show, title = '', msg = '', btnText = 'Start') {
+            const overlay = document.getElementById('game-overlay');
+            if (show) {
+                document.getElementById('overlay-title').textContent = title;
+                document.getElementById('overlay-msg').textContent = msg;
+                document.getElementById('overlay-btn').textContent = btnText;
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+            } else {
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            }
+        }
+
+        function launchGame(gameKey) {
+            playSound('beep');
+            activeGame = gameKey;
+            switchView('view-game');
+            
+            const titles = { pong: 'Pong Classic', snake: 'Retro Snake', pacman: 'Pac-man Rush' };
+            document.getElementById('game-title').textContent = titles[gameKey];
+            document.getElementById('current-score').textContent = '0';
+
+            setOverlay(true, titles[gameKey], 'Press button below or Space to start', 'Play Now');
+            drawGamePreview(gameKey);
+        }
+
+        function startCurrentGame() {
+            playSound('beep');
+            setOverlay(false);
+            gameScore = 0;
+            document.getElementById('current-score').textContent = '0';
+
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+
+            if (activeGame === 'pong') initPong();
+            else if (activeGame === 'snake') initSnake();
+            else if (activeGame === 'pacman') initPacman();
+        }
+
+        function restartActiveGame() {
+            if (activeGame) startCurrentGame();
+        }
+
+        function stopCurrentGame() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            activeGame = null;
+        }
+
+        function updateScore(points) {
+            gameScore += points;
+            document.getElementById('current-score').textContent = gameScore;
+            
+            if (activeGame && gameScore > highScores[activeGame]) {
+                highScores[activeGame] = gameScore;
+                localStorage.setItem(`hs_${activeGame}`, gameScore.toString());
+            }
+        }
+
+        /* --- GAME 1: PONG CLASSIC ENGINE --- */
+        let pongState = {};
+
+        function initPong() {
+            pongState = {
+                paddleWidth: 12,
+                paddleHeight: 80,
+                playerY: 210,
+                aiY: 210,
+                ballX: 250,
+                ballY: 250,
+                ballSpeedX: 5,
+                ballSpeedY: 3,
+                playerScore: 0,
+                aiScore: 0
+            };
+
+            window.addEventListener('keydown', handlePongInput);
+            gameLoopPong();
+        }
+
+        function handlePongInput(e) {
+            if (activeGame !== 'pong') return;
+            if (e.key === 'ArrowUp' || e.key === 'w') pongState.playerY = Math.max(10, pongState.playerY - 25);
+            if (e.key === 'ArrowDown' || e.key === 's') pongState.playerY = Math.min(410, pongState.playerY + 25);
+        }
+
+        function gameLoopPong() {
+            if (activeGame !== 'pong') return;
+
+            // Move AI Paddle smoothly
+            const aiCenter = pongState.aiY + pongState.paddleHeight / 2;
+            if (aiCenter < pongState.ballY - 10) pongState.aiY += 3.5;
+            else if (aiCenter > pongState.ballY + 10) pongState.aiY -= 3.5;
+
+            // Move Ball
+            pongState.ballX += pongState.ballSpeedX;
+            pongState.ballY += pongState.ballSpeedY;
+
+            // Wall Collisions
+            if (pongState.ballY <= 10 || pongState.ballY >= 490) {
+                pongState.ballSpeedY *= -1;
+                playSound('beep');
+            }
+
+            // Paddle Collisions (Player)
+            if (pongState.ballX <= 30 && pongState.ballY >= pongState.playerY && pongState.ballY <= pongState.playerY + pongState.paddleHeight) {
+                pongState.ballSpeedX = Math.abs(pongState.ballSpeedX) + 0.2;
+                pongState.ballX = 31;
+                updateScore(1);
+                playSound('beep');
+            }
+
+            // Paddle Collisions (AI)
+            if (pongState.ballX >= 470 && pongState.ballY >= pongState.aiY && pongState.ballY <= pongState.aiY + pongState.paddleHeight) {
+                pongState.ballSpeedX = -Math.abs(pongState.ballSpeedX);
+                playSound('beep');
+            }
+
+            // Score Check
+            if (pongState.ballX < 0) {
+                playSound('gameover');
+                setOverlay(true, 'Game Over', `Final Score: ${gameScore}`, 'Play Again');
+                return;
+            } else if (pongState.ballX > 500) {
+                playSound('score');
+                pongState.ballX = 250;
+                pongState.ballY = 250;
+                pongState.ballSpeedX = -5;
+                updateScore(5);
+            }
+
+            // Render
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, 500, 500);
+
+            // Center Net
+            ctx.strokeStyle = '#1e293b';
+            ctx.setLineDash([8, 8]);
+            ctx.beginPath();
+            ctx.moveTo(250, 0);
+            ctx.lineTo(250, 500);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Paddles & Ball
+            ctx.fillStyle = '#6366f1';
+            ctx.fillRect(15, pongState.playerY, pongState.paddleWidth, pongState.paddleHeight);
+
+            ctx.fillStyle = '#ec4899';
+            ctx.fillRect(473, pongState.aiY, pongState.paddleWidth, pongState.paddleHeight);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(pongState.ballX, pongState.ballY, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            animationFrameId = requestAnimationFrame(gameLoopPong);
+        }
+
+        /* --- GAME 2: RETRO SNAKE ENGINE --- */
+        let snakeState = {};
+
+        function initSnake() {
+            snakeState = {
+                gridSize: 20,
+                tileCount: 25,
+                snake: [{ x: 12, y: 12 }, { x: 12, y: 13 }, { x: 12, y: 14 }],
+                dx: 0,
+                dy: -1,
+                food: { x: 5, y: 5 },
+                speedMs: 110,
+                lastTime: 0
+            };
+
+            window.addEventListener('keydown', handleSnakeInput);
+            animationFrameId = requestAnimationFrame(gameLoopSnake);
+        }
+
+        function handleSnakeInput(e) {
+            if (activeGame !== 'snake') return;
+            if ((e.key === 'ArrowUp' || e.key === 'w') && snakeState.dy === 0) { snakeState.dx = 0; snakeState.dy = -1; }
+            if ((e.key === 'ArrowDown' || e.key === 's') && snakeState.dy === 0) { snakeState.dx = 0; snakeState.dy = 1; }
+            if ((e.key === 'ArrowLeft' || e.key === 'a') && snakeState.dx === 0) { snakeState.dx = -1; snakeState.dy = 0; }
+            if ((e.key === 'ArrowRight' || e.key === 'd') && snakeState.dx === 0) { snakeState.dx = 1; snakeState.dy = 0; }
+        }
+
+        function gameLoopSnake(timestamp) {
+            if (activeGame !== 'snake') return;
+
+            if (timestamp - snakeState.lastTime > snakeState.speedMs) {
+                snakeState.lastTime = timestamp;
+
+                const head = { x: snakeState.snake[0].x + snakeState.dx, y: snakeState.snake[0].y + snakeState.dy };
+
+                // Collision with Walls
+                if (head.x < 0 || head.x >= 25 || head.y < 0 || head.y >= 25) {
+                    playSound('gameover');
+                    setOverlay(true, 'Snake Crashed!', `Final Score: ${gameScore}`, 'Try Again');
+                    return;
+                }
+
+                // Collision with Self
+                for (let part of snakeState.snake) {
+                    if (part.x === head.x && part.y === head.y) {
+                        playSound('gameover');
+                        setOverlay(true, 'Tail Bitten!', `Final Score: ${gameScore}`, 'Try Again');
+                        return;
+                    }
+                }
+
+                snakeState.snake.unshift(head);
+
+                // Eating Food
+                if (head.x === snakeState.food.x && head.y === snakeState.food.y) {
+                    playSound('score');
+                    updateScore(10);
+                    snakeState.food = {
+                        x: Math.floor(Math.random() * 25),
+                        y: Math.floor(Math.random() * 25)
+                    };
+                } else {
+                    snakeState.snake.pop();
+                }
+            }
+
+            // Render
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, 500, 500);
+
+            // Food
+            ctx.fillStyle = '#ef4444';
+            ctx.beginPath();
+            ctx.arc(snakeState.food.x * 20 + 10, snakeState.food.y * 20 + 10, 8, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Snake Body
+            snakeState.snake.forEach((part, index) => {
+                ctx.fillStyle = index === 0 ? '#34d399' : '#059669';
+                ctx.fillRect(part.x * 20 + 1, part.y * 20 + 1, 18, 18);
+            });
+
+            animationFrameId = requestAnimationFrame(gameLoopSnake);
+        }
+
+        /* --- GAME 3: PACMAN RUSH ENGINE --- */
+        let pacState = {};
+
+        function initPacman() {
+            pacState = {
+                x: 250,
+                y: 350,
+                dx: 0,
+                dy: 0,
+                mouthAngle: 0.2,
+                mouthSpeed: 0.02,
+                dots: [],
+                ghosts: [
+                    { x: 150, y: 150, dx: 2, dy: 0, color: '#ef4444' },
+                    { x: 350, y: 150, dx: -2, dy: 0, color: '#f472b6' }
+                ]
+            };
+
+            // Generate Dot Grid
+            for (let x = 40; x <= 460; x += 40) {
+                for (let y = 40; y <= 460; y += 40) {
+                    pacState.dots.push({ x, y, eaten: false });
+                }
+            }
+
+            window.addEventListener('keydown', handlePacmanInput);
+            gameLoopPacman();
+        }
+
+        function handlePacmanInput(e) {
+            if (activeGame !== 'pacman') return;
+            if (e.key === 'ArrowUp' || e.key === 'w') { pacState.dx = 0; pacState.dy = -3; }
+            if (e.key === 'ArrowDown' || e.key === 's') { pacState.dx = 0; pacState.dy = 3; }
+            if (e.key === 'ArrowLeft' || e.key === 'a') { pacState.dx = -3; pacState.dy = 0; }
+            if (e.key === 'ArrowRight' || e.key === 'd') { pacState.dx = 3; pacState.dy = 0; }
+        }
+
+        function gameLoopPacman() {
+            if (activeGame !== 'pacman') return;
+
+            // Move Pacman
+            pacState.x = Math.max(20, Math.min(480, pacState.x + pacState.dx));
+            pacState.y = Math.max(20, Math.min(480, pacState.y + pacState.dy));
+
+            // Mouth Animation
+            pacState.mouthAngle += pacState.mouthSpeed;
+            if (pacState.mouthAngle > 0.4 || pacState.mouthAngle < 0.05) {
+                pacState.mouthSpeed *= -1;
+            }
+
+            // Check Eating Dots
+            pacState.dots.forEach(dot => {
+                if (!dot.eaten && Math.hypot(dot.x - pacState.x, dot.y - pacState.y) < 15) {
+                    dot.eaten = true;
+                    updateScore(10);
+                    playSound('beep');
+                }
+            });
+
+            // Move Ghosts & Check Collisions
+            for (let g of pacState.ghosts) {
+                g.x += g.dx;
+                g.y += g.dy;
+                if (g.x <= 40 || g.x >= 460) g.dx *= -1;
+                if (g.y <= 40 || g.y >= 460) g.dy *= -1;
+
+                if (Math.hypot(g.x - pacState.x, g.y - pacState.y) < 22) {
+                    playSound('gameover');
+                    setOverlay(true, 'Caught by Ghost!', `Final Score: ${gameScore}`, 'Play Again');
+                    return;
+                }
+            }
+
+            // Render
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, 500, 500);
+
+            // Draw Dots
+            ctx.fillStyle = '#fde68a';
+            pacState.dots.forEach(dot => {
+                if (!dot.eaten) {
+                    ctx.beginPath();
+                    ctx.arc(dot.x, dot.y, 4, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // Draw Ghosts
+            pacState.ghosts.forEach(g => {
+                ctx.fillStyle = g.color;
+                ctx.beginPath();
+                ctx.arc(g.x, g.y - 4, 12, Math.PI, 0, false);
+                ctx.lineTo(g.x + 12, g.y + 12);
+                ctx.lineTo(g.x - 12, g.y + 12);
+                ctx.fill();
+            });
+
+            // Draw Pacman
+            ctx.fillStyle = '#facc15';
+            const rotation = pacState.dx > 0 ? 0 : pacState.dx < 0 ? Math.PI : pacState.dy > 0 ? Math.PI / 2 : -Math.PI / 2;
+            ctx.beginPath();
+            ctx.arc(pacState.x, pacState.y, 16, rotation + pacState.mouthAngle, rotation + Math.PI * 2 - pacState.mouthAngle);
+            ctx.lineTo(pacState.x, pacState.y);
+            ctx.fill();
+
+            animationFrameId = requestAnimationFrame(gameLoopPacman);
+        }
+
+        // Preview Render for Canvas when opening modal
+        function drawGamePreview(gameKey) {
+            ctx.fillStyle = '#030712';
+            ctx.fillRect(0, 0, 500, 500);
+
+            ctx.fillStyle = '#6366f1';
+            ctx.font = 'bold 20px "Plus Jakarta Sans"';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Ready to play ${gameKey.toUpperCase()}?`, 250, 250);
+        }
+    </script>
+</body>
+</html>
